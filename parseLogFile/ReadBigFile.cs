@@ -10,6 +10,10 @@ using System.Runtime.InteropServices;
 
 using System.Diagnostics;
 
+using System.Text.RegularExpressions;
+using System.Globalization; 
+
+
 namespace parseLogFile
 {
     public class ReadBigFile
@@ -26,6 +30,12 @@ namespace parseLogFile
         // current ofsset at file at bytes
         public int CurrentByteOffset {  get; set; }
 
+        // regex template used for parsing
+        public string RegexTemplate = @"\d{2}/[a-zA-Z]{3}/\d{4}:\d{2}:\d{2}:\d{2}";
+
+        // regex used for parsgin date
+        public Regex DateRegex = null;
+
 
 
         public ReadBigFile() : this("")
@@ -34,7 +44,9 @@ namespace parseLogFile
 
         public ReadBigFile(string Filename)
         {
-            this.FileName = Filename;
+            FileName = Filename;
+
+            DateRegex = new Regex( RegexTemplate, RegexOptions.IgnoreCase);
         }
 
         // get line from file
@@ -74,9 +86,12 @@ namespace parseLogFile
 
                 String line;
 
-                int DisplayInfoEachLine = 100;
+                int DisplayInfoEachLine = 1000;
 
                 var watch = Stopwatch.StartNew();
+
+                DateTime date = new DateTime();
+                bool DateIsParsed = false;
 
                 // Create an instance of StreamReader to read from a file.
                 // The using statement also closes the StreamReader.
@@ -87,12 +102,13 @@ namespace parseLogFile
                     while ((line = sr.ReadLine()) != null)
                     {
                         count++;
-                        // Console.WriteLine("{0}: {1}", count, line);
+
+                        DateIsParsed = ParseDate(line, out date);
 
                         if (count % DisplayInfoEachLine == 0)
                         {
                             Console.WriteLine("Count: {0} : time: {1}", count, watch.ElapsedMilliseconds);
-
+                            // Console.WriteLine("{0}: {1}", count, line);
                         }
 
                         if (count > breakWork)
@@ -122,6 +138,25 @@ namespace parseLogFile
         }
 
 
+        public bool ParseDate(string Line, out DateTime date)
+        {
+            bool result = false;
+            MatchCollection matches = this.DateRegex.Matches(Line);
+
+            if ( matches.Count  > 0  )
+            {
+                // date = DateTime.ParseExact(matches[0].Value, "dd/MMM/yyyy:HH:mm:ss", CultureInfo.InvariantCulture);
+
+                date = new DateTime();
+                result = true;
+            }
+            else
+            {
+                date = new DateTime();
+            }
+            return result;
+
+        }
 
 
         #region MakeTestFile definition
@@ -204,23 +239,4 @@ namespace parseLogFile
     }
 
 
-
-
-
-    public struct MyColor
-    {
-        public short Red;
-        public short Green;
-        public short Blue;
-        public short Alpha;
-
-        // Make the view brighter. 
-        public void Brighten(short value)
-        {
-            Red = (short)Math.Min(short.MaxValue, (int)Red + value);
-            Green = (short)Math.Min(short.MaxValue, (int)Green + value);
-            Blue = (short)Math.Min(short.MaxValue, (int)Blue + value);
-            Alpha = (short)Math.Min(short.MaxValue, (int)Alpha + value);
-        }
-    }
 }
