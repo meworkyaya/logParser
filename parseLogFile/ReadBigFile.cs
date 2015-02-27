@@ -36,6 +36,10 @@ namespace parseLogFile
         // regex used for parsgin date
         public Regex DateRegex = null;
 
+        Dictionary<string, LogRecord> records = new Dictionary<string, LogRecord>();
+
+
+
 
 
         public ReadBigFile() : this("")
@@ -82,7 +86,7 @@ namespace parseLogFile
             try
             {
                 long count = 0;
-                long breakWork = 1000000;
+                long breakWork = 1000000 * 50;
 
                 String line;
 
@@ -93,16 +97,11 @@ namespace parseLogFile
                 DateTime date = new DateTime();
                 bool DateIsParsed = false;
 
-                DateTime CurrentDate = new DateTime();
-                int CurrentMinute = -1;
-                int CurrentSecond = -1;
-                int CurrentRequestSecondNumber = 0;
-                int CurrentRequestMinuteNumber = 0;
-
-                LogRecord[] records = new LogRecord[90000]; // records for seconds
-                int SecondsIndex = 0;       // index for seconds
+                // Dictionary<string, LogRecord> records = new Dictionary<string, LogRecord>();
+                // LogRecord[] records = new LogRecord[90000]; // records for seconds
 
                 string DateString = "";
+                LogRecord cr = new LogRecord();
 
                 // Create an instance of StreamReader to read from a file.
                 // The using statement also closes the StreamReader.
@@ -119,44 +118,25 @@ namespace parseLogFile
 
                         if (DateIsParsed)
                         {
-                            // check variants
-                            if (date.Second == CurrentSecond && date.Minute == CurrentMinute) // if second is same - add total request number to second
+                            // if dont have such time yet - add it
+                            if ( records.ContainsKey(DateString))
                             {
-                                CurrentRequestMinuteNumber++;
-                                CurrentRequestSecondNumber++;                                
-                            }
-                            else if (date.Second != CurrentSecond && date.Minute == CurrentMinute) // this is new second - need begin new count for second
-                            {
-                                // store current second
-                                records[SecondsIndex].RequestPerSecond = CurrentRequestSecondNumber;
-
-                                SecondsIndex++;
-
-                                CurrentSecond = date.Second;
-
-                                CurrentRequestMinuteNumber++;
-                                CurrentRequestSecondNumber = 1;
-                            }
-                            else if (date.Minute != CurrentMinute) // this is new minute 
-                            {
-                                records[SecondsIndex].RequestPerSecond = CurrentRequestSecondNumber;
-                                records[SecondsIndex].RequestPerMinute = CurrentRequestMinuteNumber;
-
-                                SecondsIndex++;
-
-                                CurrentSecond = date.Second;
-                                CurrentMinute = date.Minute;
-
-                                CurrentRequestMinuteNumber = 1;
-                                CurrentRequestSecondNumber = 1;
                             }
                             else 
                             {
-                                // we dont must be there
-                                Error("we dont must be there");
+                                cr = new LogRecord();
+                                cr.FullDate = DateString;
+                                records.Add(DateString, cr );
                             }
+                            cr = records[DateString];
+
+                            cr.RequestPerSecond++;
+                            cr.RequestPerMinute++;
+
+                            records[DateString] = cr;
 
                         }
+
 
                         if (count % DisplayInfoEachLine == 0)
                         {
@@ -177,7 +157,8 @@ namespace parseLogFile
                 Console.WriteLine("elapsed time: {0}", elapsedMs);
                 Console.WriteLine("{0}: {1}", count, line);
 
-                
+
+                OutputResult();
 
             }
             catch (Exception e)
@@ -192,7 +173,29 @@ namespace parseLogFile
 
 
 
+        public void OutputResult()
+        {
+            string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result.txt";
 
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(FileName))
+            {
+                foreach (KeyValuePair<string, LogRecord> entry in records)
+                {
+                    // do something with entry.Value or entry.Key
+                    file.WriteLine("{0} :: {1} :: {2}", entry.Value.FullDate, entry.Value.RequestPerSecond, getColumn( entry.Value.RequestPerSecond) );
+                }
+            }
+        }
+
+
+        public string getColumn(int count)
+        {
+            char ch = '=';
+            StringBuilder sb = new StringBuilder();
+            sb.Append(ch, (int)(0.5 + count / 5));
+
+            return sb.ToString();
+        }
 
 
 

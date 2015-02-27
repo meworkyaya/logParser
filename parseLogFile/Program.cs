@@ -17,10 +17,10 @@ namespace parseLogFile
             //testRegex();
 
             // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_short.log";       // short log - part of sec
-            string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_midle.log";    // midle log - few secs
+            // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_midle.log";    // midle log - few secs
             // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\test.log";         // few mins
 
-            // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\dojo.access.log";        // core src log
+            string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\dojo.access.log";        // core src log
 
             var ReadFile = new ReadBigFile();
 
