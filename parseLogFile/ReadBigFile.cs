@@ -103,7 +103,8 @@ namespace parseLogFile
                     {
                         count++;
 
-                        DateIsParsed = ParseDate(line, out date);
+                        // DateIsParsed = ParseDate(line, out date);    // regexp version - at 10 time slonger than string + date.parse version
+                        DateIsParsed = ParseDateByString(line, out date);
 
                         if (count % DisplayInfoEachLine == 0)
                         {
@@ -138,6 +139,12 @@ namespace parseLogFile
         }
 
 
+        /// <summary>
+        /// parse line date by regexp; timing: 50000 records - 4s 500 ms
+        /// </summary>
+        /// <param name="Line"></param>
+        /// <param name="date"></param>
+        /// <returns></returns>
         public bool ParseDate(string Line, out DateTime date)
         {
             bool result = false;
@@ -145,9 +152,9 @@ namespace parseLogFile
 
             if ( matches.Count  > 0  )
             {
-                // date = DateTime.ParseExact(matches[0].Value, "dd/MMM/yyyy:HH:mm:ss", CultureInfo.InvariantCulture);
+                date = DateTime.ParseExact(matches[0].Value, "dd/MMM/yyyy:HH:mm:ss", CultureInfo.InvariantCulture);
 
-                date = new DateTime();
+                // date = new DateTime();
                 result = true;
             }
             else
@@ -155,8 +162,49 @@ namespace parseLogFile
                 date = new DateTime();
             }
             return result;
-
         }
+
+
+
+        /// <summary>
+        /// timing: 50 000 lines - 408 ms. At 10 times faster than regexp )
+        /// </summary>
+        /// <param name="Line"></param>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public bool ParseDateByString(string Line, out DateTime date)
+        {
+            int pos_1 = Line.IndexOf('[');
+            if (!(pos_1 > 0))
+            {
+                date = new DateTime();
+                return false;
+            }
+
+            int pos_2 = Line.IndexOf(' ', pos_1 + 1);
+            if (!(pos_2 > 0))
+            {
+                date = new DateTime();
+                return false;
+            }
+
+            
+            try
+            {
+                string subString = Line.Substring(pos_1 + 1, pos_2 - pos_1 - 1);
+                date = DateTime.ParseExact(subString, "dd/MMM/yyyy:HH:mm:ss", CultureInfo.InvariantCulture);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                date = new DateTime();
+                return false;
+            }
+        }
+
+
+
 
 
         #region MakeTestFile definition
