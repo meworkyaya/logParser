@@ -74,6 +74,8 @@ namespace parseLogFile
 
                 String line;
 
+                int DisplayInfoEachLine = 100;
+
                 var watch = Stopwatch.StartNew();
 
                 // Create an instance of StreamReader to read from a file.
@@ -87,6 +89,12 @@ namespace parseLogFile
                         count++;
                         // Console.WriteLine("{0}: {1}", count, line);
 
+                        if (count % DisplayInfoEachLine == 0)
+                        {
+                            Console.WriteLine("Count: {0} : time: {1}", count, watch.ElapsedMilliseconds);
+
+                        }
+
                         if (count > breakWork)
                         {
                             break;
@@ -96,6 +104,7 @@ namespace parseLogFile
 
                 watch.Stop();
                 var elapsedMs = watch.ElapsedMilliseconds;
+                //var elapsedMs = watch.ElapsedMilliseconds;
                 Console.WriteLine("elapsed time: {0}", elapsedMs);
                 Console.WriteLine("{0}: {1}", count, line);
 
@@ -115,7 +124,7 @@ namespace parseLogFile
 
 
 
-
+        #region MakeTestFile definition
 
         // get source file and copy LinesCount from it to Out file
         public int MakeTestFile( string FileNameInput, string FileNameOut, int LinesCount)
@@ -174,14 +183,29 @@ namespace parseLogFile
 
             return 0;
         }
-
-
-
-
-
+        #endregion MakeTestFile definition
 
 
     }
+
+
+
+
+    public struct LogRecord
+    {
+        public int LineNumber;
+        public string FullDate;
+
+        public string Minute;
+        public string Second;
+        public int RequestPerSecond;
+        public int RequestPerMinute;
+
+    }
+
+
+
+
 
     public struct MyColor
     {
