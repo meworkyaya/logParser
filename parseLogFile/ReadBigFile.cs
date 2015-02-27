@@ -93,6 +93,17 @@ namespace parseLogFile
                 DateTime date = new DateTime();
                 bool DateIsParsed = false;
 
+                DateTime CurrentDate = new DateTime();
+                int CurrentMinute = -1;
+                int CurrentSecond = -1;
+                int CurrentRequestSecondNumber = 0;
+                int CurrentRequestMinuteNumber = 0;
+
+                LogRecord[] records = new LogRecord[90000]; // records for seconds
+                int SecondsIndex = 0;       // index for seconds
+
+                string DateString = "";
+
                 // Create an instance of StreamReader to read from a file.
                 // The using statement also closes the StreamReader.
                 using (StreamReader sr = new StreamReader(FileName))
@@ -104,7 +115,48 @@ namespace parseLogFile
                         count++;
 
                         // DateIsParsed = ParseDate(line, out date);    // regexp version - at 10 time slonger than string + date.parse version
-                        DateIsParsed = ParseDateByString(line, out date);
+                        DateIsParsed = ParseDateByString(line, out date, out DateString);
+
+                        if (DateIsParsed)
+                        {
+                            // check variants
+                            if (date.Second == CurrentSecond && date.Minute == CurrentMinute) // if second is same - add total request number to second
+                            {
+                                CurrentRequestMinuteNumber++;
+                                CurrentRequestSecondNumber++;                                
+                            }
+                            else if (date.Second != CurrentSecond && date.Minute == CurrentMinute) // this is new second - need begin new count for second
+                            {
+                                // store current second
+                                records[SecondsIndex].RequestPerSecond = CurrentRequestSecondNumber;
+
+                                SecondsIndex++;
+
+                                CurrentSecond = date.Second;
+
+                                CurrentRequestMinuteNumber++;
+                                CurrentRequestSecondNumber = 1;
+                            }
+                            else if (date.Minute != CurrentMinute) // this is new minute 
+                            {
+                                records[SecondsIndex].RequestPerSecond = CurrentRequestSecondNumber;
+                                records[SecondsIndex].RequestPerMinute = CurrentRequestMinuteNumber;
+
+                                SecondsIndex++;
+
+                                CurrentSecond = date.Second;
+                                CurrentMinute = date.Minute;
+
+                                CurrentRequestMinuteNumber = 1;
+                                CurrentRequestSecondNumber = 1;
+                            }
+                            else 
+                            {
+                                // we dont must be there
+                                Error("we dont must be there");
+                            }
+
+                        }
 
                         if (count % DisplayInfoEachLine == 0)
                         {
@@ -131,12 +183,24 @@ namespace parseLogFile
             catch (Exception e)
             {
                 // Let the user know what went wrong.
-                Console.WriteLine("The file could not be read:");
+                Console.WriteLine("Some error happens");
                 Console.WriteLine(e.Message);
             }
 
             return 0;
         }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         /// <summary>
@@ -172,11 +236,12 @@ namespace parseLogFile
         /// <param name="Line"></param>
         /// <param name="date"></param>
         /// <returns></returns>
-        public bool ParseDateByString(string Line, out DateTime date)
+        public bool ParseDateByString(string Line, out DateTime date, out string  DateString )
         {
             int pos_1 = Line.IndexOf('[');
             if (!(pos_1 > 0))
             {
+                DateString = "";
                 date = new DateTime();
                 return false;
             }
@@ -184,6 +249,7 @@ namespace parseLogFile
             int pos_2 = Line.IndexOf(' ', pos_1 + 1);
             if (!(pos_2 > 0))
             {
+                DateString = "";
                 date = new DateTime();
                 return false;
             }
@@ -191,13 +257,14 @@ namespace parseLogFile
             
             try
             {
-                string subString = Line.Substring(pos_1 + 1, pos_2 - pos_1 - 1);
-                date = DateTime.ParseExact(subString, "dd/MMM/yyyy:HH:mm:ss", CultureInfo.InvariantCulture);
+                DateString = Line.Substring(pos_1 + 1, pos_2 - pos_1 - 1);
+                date = DateTime.ParseExact(DateString, "dd/MMM/yyyy:HH:mm:ss", CultureInfo.InvariantCulture);
 
                 return true;
             }
             catch (Exception ex)
             {
+                DateString = "";
                 date = new DateTime();
                 return false;
             }
