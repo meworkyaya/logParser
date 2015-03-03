@@ -29,6 +29,10 @@ namespace parseLogFile
         // output data file name
         public string OutputFileName { get; set; }
 
+        // output data file name for slow responses
+        public string OutputSlowFileName { get; set; }
+
+
         // limit counts of rows which will be parsed; if 0 - dont limit at all; if > 0 - limit 
         public long LimitRowsCount { get; set; }
 
@@ -208,6 +212,107 @@ namespace parseLogFile
 
 
 
+        // process file
+        public int ProcessFileRequestTime()
+        {
+            // check that file exists
+            if (!File.Exists(FileName))
+            {
+                Error("File " + FileName + " dont exists");
+                return -1;
+            }
+
+
+            try
+            {
+                long count = 0;
+                long breakWork = this.LimitRowsCount;
+
+                String line;
+
+                int DisplayInfoEachLine = 1000;
+
+                var watch = Stopwatch.StartNew();
+
+                DateTime date = new DateTime();
+                bool DateIsParsed = false;
+                bool ReqTimeIsParsed = false;
+
+                // Dictionary<string, LogRecord> records = new Dictionary<string, LogRecord>();
+                // LogRecord[] records = new LogRecord[90000]; // records for seconds
+
+                string DateString = "";
+                LogRecord cr = new LogRecord();
+                LogRecord crParsed = new LogRecord();
+
+                string key;
+
+
+                // Create an instance of StreamReader to read from a file.
+                // The using statement also closes the StreamReader.
+                using (StreamReader sr = new StreamReader(FileName))
+                {
+                    // Read and display lines from the file until the end of 
+                    // the file is reached.
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        count++;
+
+                        // DateIsParsed = ParseDate(line, out date);    // regexp version - at 10 time slonger than string + date.parse version
+                        crParsed = new LogRecord();
+                        DateIsParsed = ParseDateByString(line, out date, out DateString);
+                        ReqTimeIsParsed = ParseRequestByString(line, ref crParsed);
+
+
+                        if (DateIsParsed && ReqTimeIsParsed)
+                        {
+                            key = DateString + "_" + count.ToString();
+                            crParsed.FullDate = DateString;
+
+                            records.Add(key, crParsed);
+                        }
+
+
+                        if (count % DisplayInfoEachLine == 0)
+                        {
+                            Console.WriteLine("Count: {0} : time: {1}", count, watch.ElapsedMilliseconds);
+                            // Console.WriteLine("{0}: {1}", count, line);
+                        }
+
+                        if ((breakWork > 0) && (count > breakWork))
+                        {
+                            Console.WriteLine("Limit of rows count happens; stopped");
+                            break;
+                        }
+                    }
+                }
+
+                watch.Stop();
+                var elapsedMs = watch.ElapsedMilliseconds;
+                //var elapsedMs = watch.ElapsedMilliseconds;
+                Console.WriteLine("elapsed time: {0}", elapsedMs);
+                Console.WriteLine("{0}: {1}", count, line);
+
+
+                OutputResultReqTime(OutputFileName);
+
+            }
+            catch (Exception e)
+            {
+                // Let the user know what went wrong.
+                Console.WriteLine("Some error happens");
+                Console.WriteLine(e.Message);
+            }
+
+            return 0;
+        }
+
+
+
+
+
+
+
 
 
 
@@ -240,6 +345,55 @@ namespace parseLogFile
             }
             return true;
         }
+
+
+
+
+        public bool OutputResultReqTime(string FileName)
+        {
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(FileName))
+            {
+                foreach (KeyValuePair<string, LogRecord> entry in records)
+                {
+                    // do something with entry.Value or entry.Key
+                    file.WriteLine("{0} :: {1} :: {2} :: {3}", 
+                            entry.Value.FullDate, 
+                            entry.Value.Request.PadLeft(10), 
+                            entry.Value.RequestTime, 
+                            getColumn( (int)(5 * 1000 * double.Parse(entry.Value.RequestTime)) )
+                            // 1000 * double.Parse(entry.Value.RequestTime)
+                    );
+                }
+            }
+
+
+            // write slow items
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(OutputSlowFileName))
+            {
+                double SlowTime = 0.050;
+                double ReqTime = 0;
+                foreach (KeyValuePair<string, LogRecord> entry in records)
+                {
+                    ReqTime = double.Parse(entry.Value.RequestTime);
+                    if (ReqTime <= SlowTime) { 
+                        continue; 
+                    }
+
+                    // do something with entry.Value or entry.Key
+                    file.WriteLine("{0} :: {1} :: {2} :: {3}",
+                            entry.Value.FullDate,
+                            entry.Value.Request.PadLeft(10),
+                            entry.Value.RequestTime,
+                            getColumn((int)(5 * 1000 * double.Parse(entry.Value.RequestTime)))
+                        // 1000 * double.Parse(entry.Value.RequestTime)
+                    );
+                }
+            }
+
+
+            return true;
+        }
+
 
 
 
@@ -398,6 +552,58 @@ namespace parseLogFile
 
 
 
+        /// <summary>
+        /// timing: 50 000 lines - 408 ms. At 10 times faster than regexp )
+        /// </summary>
+        /// <param name="Line"></param>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public bool ParseRequestByString(string Line, ref LogRecord cr)
+        {
+            int subResultLength = 3;
+            int RequestGetLength = 30;
+
+            int pos_1 = Line.IndexOf('"');  // first "
+            if (!(pos_1 > 0))
+            {
+                goto Error;
+            }
+
+            int pos_2 = Line.IndexOf('"', pos_1 + 1);   // second "
+            if (!(pos_2 > 0))
+            {
+                goto Error;
+            }
+
+            int pos_3 = Line.IndexOf('"', pos_2 + 1);   // third "
+            if (!(pos_3 > 0))
+            {
+                goto Error;
+            }
+
+            string subResult = Line.Substring(pos_2 + 2, pos_3 - pos_2 - 2 - 1);    // we eat at start: '" '; eat at end: ' "'
+            string[] items = subResult.Split(' ');
+
+            if (items.Length < subResultLength)
+            {
+                goto Error;
+            }
+
+            cr.Request = Line.Substring(pos_1 + 1, RequestGetLength); 
+            cr.RequestStatus    = items[0];
+            cr.RequestTime      = items[2];
+
+
+            return true;
+
+            // if error parsing - return empty data - dont break parsing
+            Error:
+                return false;
+                
+        }
+
+
+
 
         #region MakeTestFile definition
 
@@ -475,6 +681,10 @@ namespace parseLogFile
         public string Second;
         public int RequestPerSecond;
         public int RequestPerMinute;
+
+        public string Request;
+        public string RequestStatus;
+        public string RequestTime;
 
     }
 
