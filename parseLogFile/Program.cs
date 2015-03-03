@@ -16,18 +16,39 @@ namespace parseLogFile
             //int result = 0;
             //testRegex();
 
-            // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_short.log";       // short log - part of sec
-            // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_midle.log";    // midle log - few secs
-            // string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\test.log";         // few mins
+            string FileName;    // source logs data file
+            FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_short.log";       // short log - part of sec
+            // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_midle.log";    // midle log - few secs
+            // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\test.log";         // few mins
 
-            string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\dojo.access.log";        // core src log
+            // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\dojo.access.log";        // core src log
+
+
+            string OutputFileName;  // output result file
+            // OutputFileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result.txt";       // full result - part of sec
+            OutputFileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result_short.txt";       // short log - part of sec
+
+
+            string ChartTemplate; // template for charts file
+            ChartTemplate = @"C:\_work\_projects\charts\charts\examples\line-time-series\chart_template.html";
+
+
+
 
             var ReadFile = new ReadBigFile();
 
             //// make test file from source file
             //var result = ReadFile.MakeTestFile(FileName, FileNameTest, 500000);
 
+            // setup parsing object
             ReadFile.FileName = FileName;
+            ReadFile.OutputFileName = OutputFileName;
+            ReadFile.LimitRowsCount = 0;
+
+            ReadFile.OutputResultFormat = OutputResultFormatEnum.highcharts;
+            ReadFile.ChartTemplate = ChartTemplate;
+
+            // run parsing object
             int result = ReadFile.ProcessFile();
 
             Console.WriteLine("\n\nResult of run: {0}", result);

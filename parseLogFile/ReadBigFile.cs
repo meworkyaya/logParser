@@ -16,27 +16,51 @@ using System.Globalization;
 
 namespace parseLogFile
 {
+    /// <summary>
+    /// select format of output result
+    /// </summary>
+    public enum OutputResultFormatEnum {  text = 1, highcharts = 2 }
+
     public class ReadBigFile
     {
-        // file name which read
+        // source file name with log data which read
         public string FileName { get; set; }
+
+        // output data file name
+        public string OutputFileName { get; set; }
+
+        // limit counts of rows which will be parsed; if 0 - dont limit at all; if > 0 - limit 
+        public long LimitRowsCount { get; set; }
+
+        // output result format selector
+        public OutputResultFormatEnum OutputResultFormat { get; set; }
+
+        public string ChartTemplate {get; set;}
+
+
+        // contains dictionary with results
+        Dictionary<string, LogRecord> records = new Dictionary<string, LogRecord>();
+
+
+
+        // DONT USED YET
         
-        // name of logfile where will be stored info about last parsed data; needed for restoring parsing
+        // name of logfile where will be stored info about last parsed data; needed for restoring parsing; dont used
         public string LogFileName { get; set; }
 
-        // current line where we are at file
+        // current line where we are at file; dont used
         public int CurrentLine { get; set; }
 
-        // current ofsset at file at bytes
+        // current ofsset at file at bytes; dont used
         public int CurrentByteOffset {  get; set; }
 
-        // regex template used for parsing
+        // regex template used for parsing of date/time; dont used; at 10 times longer than indexof parsing
         public string RegexTemplate = @"\d{2}/[a-zA-Z]{3}/\d{4}:\d{2}:\d{2}:\d{2}";
 
         // regex used for parsgin date
         public Regex DateRegex = null;
 
-        Dictionary<string, LogRecord> records = new Dictionary<string, LogRecord>();
+        
 
 
 
@@ -44,7 +68,10 @@ namespace parseLogFile
 
         public ReadBigFile() : this("")
         {
+            LimitRowsCount = 0;
+            OutputResultFormat = OutputResultFormatEnum.text;
         }
+
 
         public ReadBigFile(string Filename)
         {
@@ -72,6 +99,8 @@ namespace parseLogFile
 
         }
 
+
+
         // process file
         public int ProcessFile()
         {
@@ -86,7 +115,7 @@ namespace parseLogFile
             try
             {
                 long count = 0;
-                long breakWork = 1000000 * 50;
+                long breakWork = this.LimitRowsCount;
 
                 String line;
 
@@ -144,8 +173,9 @@ namespace parseLogFile
                             // Console.WriteLine("{0}: {1}", count, line);
                         }
 
-                        if (count > breakWork)
+                        if ( (breakWork > 0) && (count > breakWork))
                         {
+                            Console.WriteLine("Limit of rows count happens; stopped");
                             break;
                         }
                     }
@@ -173,19 +203,82 @@ namespace parseLogFile
 
 
 
+
+
+
+
+
+
+
+
+
         public void OutputResult()
         {
-            string FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result.txt";
+            switch (OutputResultFormat)
+            {
+                default:
+                case OutputResultFormatEnum.text:
+                    OutputResultText(OutputFileName);
+                    break;
+                case OutputResultFormatEnum.highcharts:
+                    OutputResultHighCharts(OutputFileName);
+                    break;
+            }
+        }
 
+
+
+        public bool OutputResultText(string FileName)
+        {
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(FileName))
             {
                 foreach (KeyValuePair<string, LogRecord> entry in records)
                 {
                     // do something with entry.Value or entry.Key
-                    file.WriteLine("{0} :: {1} :: {2}", entry.Value.FullDate, entry.Value.RequestPerSecond, getColumn( entry.Value.RequestPerSecond) );
+                    file.WriteLine("{0} :: {1} :: {2}", entry.Value.FullDate, entry.Value.RequestPerSecond, getColumn(entry.Value.RequestPerSecond));
                 }
             }
+            return true;
         }
+
+
+
+        public bool OutputResultHighCharts(string FileName)
+        {
+            if (!File.Exists(ChartTemplate))
+            {
+                Error("Cant find chart Template file; data will be written to text file ");
+            }
+
+            string[] sbData = new string[records.Count];
+            string Spacer = ", ";
+
+            int i = 0;
+
+            foreach (KeyValuePair<string, LogRecord> entry in records)
+            {
+                sbData[i] = entry.Value.RequestPerSecond.ToString();
+                i++;
+
+                // do something with entry.Value or entry.Key
+                // file.WriteLine("{0} :: {1} :: {2}", entry.Value.FullDate, entry.Value.RequestPerSecond, getColumn(entry.Value.RequestPerSecond));
+                // sbData.Append(entry.Value.RequestPerSecond).Append(Spacer);
+            }
+
+            string Data = String.Join(Spacer, sbData);
+
+
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(FileName))
+            {
+                file.WriteLine(Data);
+            }
+
+            // fill chart template
+            return true;
+        }
+
+
+
 
 
         public string getColumn(int count)
