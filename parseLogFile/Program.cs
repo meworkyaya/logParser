@@ -17,16 +17,16 @@ namespace parseLogFile
             //testRegex();
 
             string FileName;    // source logs data file
-            FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_short.log";       // short log - part of sec
+            // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_short.log";       // short log - part of sec
             // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\log_midle.log";    // midle log - few secs
-            // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\test.log";         // few mins
+            FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\test.log";         // few mins
 
             // FileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\dojo.access.log";        // core src log
 
 
             string OutputFileName;  // output result file
             // OutputFileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result.txt";       // full result - part of sec
-            OutputFileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result_short.txt";       // short log - part of sec
+            OutputFileName = @"C:\_work\_projects\PhluantMobile\_staff\logs_2015-02-25\_test\out_result_short.html";       // short log - part of sec
 
 
             string ChartTemplate; // template for charts file

@@ -245,16 +245,52 @@ namespace parseLogFile
 
         public bool OutputResultHighCharts(string FileName)
         {
-            if (!File.Exists(ChartTemplate))
+            bool HaveTemplate = File.Exists(ChartTemplate);
+            if (!HaveTemplate)
             {
                 Error("Cant find chart Template file; data will be written to text file ");
             }
 
+            string Data = MakeDataForChartRps();    // prepare data for charts
+            string Output;
+
+            if (HaveTemplate)
+            {
+                Output = MakeChartFromTemplate(ChartTemplate, Data);
+            }
+            else
+            {
+                Output = Data;
+            }
+
+
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(FileName))
+            {
+                file.WriteLine(Output);
+            }
+
+            return true;
+        }
+
+
+
+        public string MakeChartFromTemplate(string template, string data)
+        {
+            string result = File.ReadAllText( template);
+            result = result.Replace( "###data###", data );
+            return result;
+        }
+
+
+
+
+
+        public string MakeDataForChartRps()
+        {
             string[] sbData = new string[records.Count];
             string Spacer = ", ";
 
             int i = 0;
-
             foreach (KeyValuePair<string, LogRecord> entry in records)
             {
                 sbData[i] = entry.Value.RequestPerSecond.ToString();
@@ -264,17 +300,10 @@ namespace parseLogFile
                 // file.WriteLine("{0} :: {1} :: {2}", entry.Value.FullDate, entry.Value.RequestPerSecond, getColumn(entry.Value.RequestPerSecond));
                 // sbData.Append(entry.Value.RequestPerSecond).Append(Spacer);
             }
-
             string Data = String.Join(Spacer, sbData);
 
+            return Data;
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(FileName))
-            {
-                file.WriteLine(Data);
-            }
-
-            // fill chart template
-            return true;
         }
 
 
